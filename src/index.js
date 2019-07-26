@@ -533,5 +533,5 @@ function executeCallbacks(callbacks: Promise<Boolean>, request: $Request, respon
   if(callbacks) {
     return callbacks(request, response);
   }
-  return 0;
+  return Promise.resolve();
 }
