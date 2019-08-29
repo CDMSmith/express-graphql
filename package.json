@@ -1,6 +1,6 @@
 {
-  "name": "@cdmsmith/express-graphql",
-  "version": "0.9.3",
+  "name": "@zhaor/express-graphql",
+  "version": "0.9.5",
   "description": "Production ready GraphQL HTTP middleware.",
   "license": "MIT",
   "main": "index.js",
