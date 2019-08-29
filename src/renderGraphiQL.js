@@ -69,8 +69,8 @@ add "&raw" to the end of the URL within a browser.
     }
   </style>
   <style>
-    // zhaor/graphiql.css
-    ${loadFileStaticlyFromNPM('zhaor/graphiql.css')}
+    // graphiql/graphiql.css
+    ${loadFileStaticlyFromNPM('graphiql/graphiql.css')}
   </style>
   <script>
     // promise-polyfill/dist/polyfill.min.js
@@ -89,8 +89,8 @@ add "&raw" to the end of the URL within a browser.
     ${loadFileStaticlyFromNPM('react-dom/umd/react-dom.production.min.js')}
   </script>
   <script>
-    // zhaor/graphiql.min.js
-    ${loadFileStaticlyFromNPM('zhaor/graphiql.min.js')}
+    // graphiql/graphiql.min.js
+    ${loadFileStaticlyFromNPM('graphiql/graphiql.min.js')}
   </script>
 </head>
 <body>
