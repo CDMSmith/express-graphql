@@ -400,35 +400,116 @@ function graphqlHTTP(options: Options): Middleware {
           });
         }
 
+        /**
+         * 
+         * Helper functions to parse primitive array
+         */
+        function toCsv(arr) {
+          let str = '';
+          for (let i in arr) {
+              str += arr[i].toString() + '\n';
+          }
+          return str;
+        }
+
+        function findPrimCol(arr, splitter) {
+          for (let i = 0; i < arr.length; i++) {
+              if ((typeof arr[i] == 'string') && (arr[i].includes(splitter))) {
+                  return i;
+              }
+          }
+          return -1;
+        }
+
+        function checkArrPrim(arr, splitter) {
+          let ind;
+          for (let i in arr) {
+              ind = findPrimCol(arr[i], splitter);
+              if (ind > -1) {
+                  return ind;
+              }
+          }
+          return ind;
+        }
+
+        // Check arr for prim column
+        // If it exists, go through array and 
+        async function parsePrimitiveArr(arr, splitter) {
+          let finalArr = [];
+          let stagingArr = [];
+          let workingArr = [];
+          let primInd = findPrimCol(arr, splitter);
+          stagingArr.push(arr);
+
+          let beforePrim;
+          let prim;
+          let afterPrim;
+          
+          while (primInd > 0) {
+              for (let i in stagingArr) {
+                  beforePrim = stagingArr[i].slice(0, primInd);
+                  prim = stagingArr[i][primInd].split(splitter);
+                  afterPrim = stagingArr[i].slice(primInd + 1);
+                  for (let j in prim) {
+                      workingArr = [];
+                      workingArr = workingArr.concat(beforePrim);
+                      workingArr = workingArr.concat(prim[j]);
+                      workingArr = workingArr.concat(afterPrim);
+                      finalArr.push(workingArr);
+                  }
+              }
+              primInd = checkArrPrim(finalArr, splitter);
+              stagingArr = finalArr;
+              finalArr = [];
+          }
+          return stagingArr;
+        }
+
+        async function handlePrimArr(csv, splitter) {
+          let res = csv.split('\n').map(e => e.split(',').map(e => e.trim())); 
+          let stagingArr = [];
+          let counter = 0;
+          for (let ind in res) {
+              stagingArr.push(await parsePrimitiveArr(res[ind], splitter));
+              counter ++;
+
+              if (counter == res.length) {
+                  return await toCsv([].concat.apply([], stagingArr));
+              }
+          }
+        }
+
         // If "pretty" JSON isn't requested, and the server provides a
         // response.json method (express), use that directly.
         // Otherwise use the simplified sendResponse method.
         let output = 'json';
 
-
         if (request && request.query && typeof request.query.output !== 'undefined') {
           output = request.query.output;
         }
-  
-        if(output === 'csv') {
+
+        if (output === 'csv') {
           // Convert result json to csv
           // Source: https://github.com/kauegimenes/jsonexport
-          const jsonexport = require('../../../functions/jsonexport/dist/index'); // Local copy of package
-          const { handlePrimArr } = require('../../../functions');
+          const jsonexport = require('jsonexport'); // Local copy of package
+
           let res = result.data[Object.keys(result.data)[0]]; // Consider changing to check against dictionary
           // Alt code 10 (alt + 10) used to split primitive array values, match in functions parsePrimitiveArr() and findPrimCol()
+
           let splitter = '◙';
-          jsonexport(JSON.parse(JSON.stringify(res)), {fillGaps: true, arrayPathString: splitter}, function(err, csv) {
+          jsonexport(JSON.parse(JSON.stringify(res)), {
+            fillGaps: true,
+            arrayPathString: splitter
+          }, function (err, csv) {
             if (err) return console.log(err);
-            handlePrimArr(csv, splitter).then((output) => {
+            handlePrimArr(csv, splitter).then(output => {
               console.log(output);
               response.setHeader('Content-type', "application/octet-stream");
               response.setHeader('Content-disposition', 'attachment; filename=output.csv');
               response.send(output);
             });
           });
-        }
-        else if (output === 'json') {
+        } else if (output === 'json') {
           if (!pretty && typeof response.json === 'function') {
             executeCallbacks(callbacks, request, response).then(() => {
               response.json(result);
